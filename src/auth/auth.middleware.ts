@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../user/user.service';
 import { User } from '../user/user.entity';
 
-interface CustomRequest extends Request {
+export interface AuthorizedRequest extends Request {
   user: User;
 }
 @Injectable()
@@ -18,7 +18,7 @@ export class AuthMiddleware implements NestMiddleware {
     private readonly usersService: UsersService,
   ) {}
 
-  async use(req: CustomRequest, res: Response, next: NextFunction) {
+  async use(req: Request, res: Response, next: NextFunction) {
     if (req.path.startsWith('/auth/')) {
       return next();
     }
@@ -29,7 +29,8 @@ export class AuthMiddleware implements NestMiddleware {
         const decoded = this.jwtService.verify(token);
         const user = await this.usersService.findById(decoded.sub);
         if (user) {
-          req.user = user;
+          console.log(user);
+          (req as AuthorizedRequest).user = user;
           return next(); // Proceed to the next middleware/route handler
         }
       } catch (err) {
