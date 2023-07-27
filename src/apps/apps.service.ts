@@ -33,4 +33,12 @@ export class AppService {
       relations: ['channels'],
     });
   }
+
+  async deleteAppById(id: number) {
+    return await this.appRepository.delete(id);
+  }
+
+  async patchAppById(id: number, newData: App) {
+    return await this.appRepository.update(id, newData);
+  }
 }

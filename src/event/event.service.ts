@@ -3,24 +3,34 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Channel } from '../channel/channel.entity';
 import { Event } from './event.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class EventService {
   constructor(
     @InjectRepository(Event)
-    private eventRepository: Repository<Event>,
+    public eventRepository: Repository<Event>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  async emitEvent(event: Event): Promise<void> {
+    this.eventEmitter.emit('event.created', event);
+  }
+
+  async subscribeToEvent(eventId: number): Promise<Event> {
+    return this.eventRepository.findOne({ where: { id: eventId } });
+  }
 
   async createEvent(
     identifier: string,
     payload: Record<string, any>,
     channel: Channel,
-  ): Promise<Event> {
+  ) {
     const event = new Event();
     event.identifier = identifier;
     event.payload = payload;
     event.channel = channel;
-    return this.eventRepository.save(event);
+    return await this.eventRepository.save(event);
   }
 
   async findEventById(id: number): Promise<Event | undefined> {

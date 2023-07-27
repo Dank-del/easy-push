@@ -12,21 +12,27 @@ import { Event } from './event/event.entity';
 import { Channel } from './channel/channel.entity';
 import { App } from './apps/apps.entity';
 import { AuthModule } from './auth/auth.module';
+import { EventEmitterSubscriber } from './event/event.subscriber';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { UtilsModule } from './utils/utils.module';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       url: process.env.DATABASE_URL,
       type: 'postgres',
       entities: [User, Event, Channel, App],
       synchronize: true,
+      subscribers: [EventEmitterSubscriber],
     }),
     AuthModule,
     UserModule,
     AppsModule,
     ChannelModule,
     EventModule,
+    UtilsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

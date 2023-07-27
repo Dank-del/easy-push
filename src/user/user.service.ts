@@ -38,6 +38,7 @@ export class UsersService {
   }
   async validatePassword(password: string, userId: number): Promise<boolean> {
     const user = await this.findById(userId);
-    return bcrypt.compare(password, user.password);
+    console.log(password);
+    return await bcrypt.compare(password, user.password);
   }
 }
