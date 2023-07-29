@@ -24,9 +24,7 @@ export class UtilsService {
   async isAppOwned(appId: number, userId: number) {
     const app = await this.appService.findAppById(appId);
     if (app.creator.id !== userId) {
-      throw new UnauthorizedException(
-        "You don't own the app this channel belongs to",
-      );
+      throw new UnauthorizedException("You don't own this app");
     }
     return app;
   }

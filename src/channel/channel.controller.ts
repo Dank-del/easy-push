@@ -15,12 +15,14 @@ import { AuthorizedRequest } from '../auth/auth.middleware';
 import createChannelDto from './dto/createChannelDto';
 import { Observable } from 'rxjs';
 import { UtilsService } from '../utils/utils.service';
+import { EventService } from '../event/event.service';
 
 @Controller('channel')
 export class ChannelController {
   constructor(
     private readonly channelsService: ChannelService,
     private readonly utilsService: UtilsService,
+    private readonly eventsService: EventService,
   ) {}
   @Sse('/:channelId/subscribe')
   async subscribeToChannel(
@@ -38,9 +40,43 @@ export class ChannelController {
       eventStream.subscribe((event) => {
         // Format the event payload as needed before sending
         const formattedEvent = {
-          id: event.id,
-          identifier: event.identifier,
-          payload: event.payload,
+          ...event,
+          channel: {
+            name: channel.name,
+            id: channel.id,
+          },
+        };
+
+        observer.next({ data: formattedEvent });
+      });
+    });
+  }
+
+  @Sse('/:channelId/:eventIdentifier/subscribe')
+  async subscribeToEvent(
+    @Request() request: AuthorizedRequest,
+    @Param('channelId') channelId: number,
+    @Param('eventIdentifier') eventIdentifier: string,
+  ) {
+    const { channel } = await this.utilsService.isChannelOwned(
+      channelId,
+      request.user.id,
+    );
+
+    return new Observable((observer) => {
+      const eventStream = this.eventsService.subscribeToEvent(
+        channel.id,
+        eventIdentifier,
+      );
+
+      eventStream.subscribe((event) => {
+        // Format the event payload as needed before sending
+        const formattedEvent = {
+          ...event,
+          channel: {
+            name: channel.name,
+            id: channel.id,
+          },
         };
 
         observer.next({ data: formattedEvent });

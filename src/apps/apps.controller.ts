@@ -7,15 +7,18 @@ import {
   Patch,
   Post,
   Request,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthorizedRequest } from '../auth/auth.middleware';
 import CreateAppDto from './dto/createAppDto';
 import { AppService } from './apps.service';
+import { UtilsService } from '../utils/utils.service';
 
 @Controller('apps')
 export class AppsController {
-  constructor(private appService: AppService) {}
+  constructor(
+    private appService: AppService,
+    private utilsService: UtilsService,
+  ) {}
   @Post()
   async createApp(
     @Request() request: AuthorizedRequest,
@@ -25,11 +28,7 @@ export class AppsController {
   }
   @Get(':id')
   async getApp(@Request() request: AuthorizedRequest, @Param('id') id: number) {
-    const app = await this.appService.findAppById(id);
-    if (app.creator.id !== request.user.id) {
-      throw new UnauthorizedException('You do not have access to this app');
-    }
-    return app;
+    return await this.utilsService.isAppOwned(id, request.user.id);
   }
   @Patch(':id')
   async editApp(
@@ -37,10 +36,7 @@ export class AppsController {
     @Param('id') id: number,
     @Body() body: CreateAppDto,
   ) {
-    const app = await this.appService.findAppById(id);
-    if (app.creator.id !== request.user.id) {
-      throw new UnauthorizedException('You do not have access to this app');
-    }
+    const app = await this.utilsService.isAppOwned(id, request.user.id);
     return await this.appService.patchAppById(id, {
       ...app,
       name: body.name,
@@ -52,10 +48,7 @@ export class AppsController {
     @Request() request: AuthorizedRequest,
     @Param('id') id: number,
   ) {
-    const app = await this.appService.findAppById(id);
-    if (app.creator.id !== request.user.id) {
-      throw new UnauthorizedException('You do not have access to this app');
-    }
+    const app = await this.utilsService.isAppOwned(id, request.user.id);
     return await this.appService.deleteAppById(app.id);
   }
 
