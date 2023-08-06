@@ -13,7 +13,6 @@ import { ChannelService } from './channel.service';
 import { Channel } from './channel.entity';
 import { AuthorizedRequest } from '../auth/auth.middleware';
 import createChannelDto from './dto/createChannelDto';
-import { Observable } from 'rxjs';
 import { UtilsService } from '../utils/utils.service';
 import { EventService } from '../event/event.service';
 
@@ -34,22 +33,7 @@ export class ChannelController {
       request.user.id,
     );
 
-    return new Observable((observer) => {
-      const eventStream = this.channelsService.subscribeToChannel(channel.id);
-
-      eventStream.subscribe((event) => {
-        // Format the event payload as needed before sending
-        const formattedEvent = {
-          ...event,
-          channel: {
-            name: channel.name,
-            id: channel.id,
-          },
-        };
-
-        observer.next({ data: formattedEvent });
-      });
-    });
+    return this.channelsService.subscribeToChannel(channel.id);
   }
 
   @Sse('/:channelId/:eventIdentifier/subscribe')
@@ -63,25 +47,7 @@ export class ChannelController {
       request.user.id,
     );
 
-    return new Observable((observer) => {
-      const eventStream = this.eventsService.subscribeToEvent(
-        channel.id,
-        eventIdentifier,
-      );
-
-      eventStream.subscribe((event) => {
-        // Format the event payload as needed before sending
-        const formattedEvent = {
-          ...event,
-          channel: {
-            name: channel.name,
-            id: channel.id,
-          },
-        };
-
-        observer.next({ data: formattedEvent });
-      });
-    });
+    return this.eventsService.subscribeToEvent(channel.id, eventIdentifier);
   }
 
   @Get(':id')

@@ -22,10 +22,10 @@ export class ChannelService {
     return this.channelRepository.save(channel);
   }
 
-  subscribeToChannel(channelId: number): Observable<Event> {
+  subscribeToChannel(channelId: number): Observable<MessageEvent<Event>> {
     // Simulate the event stream using an interval for demonstration purposes
     const intervalMs = 2000; // Change this to your desired interval
-    return new Observable<Event>((observer) => {
+    return new Observable<MessageEvent<Event>>((observer) => {
       const intervalId = setInterval(async () => {
         const lastEventId = this.lastEventIdMap.get(channelId) || 0;
         const events = await this.eventService.eventRepository.find({
@@ -35,7 +35,9 @@ export class ChannelService {
         if (events && events.length > 0) {
           events.forEach((event) => {
             this.lastEventIdMap.set(channelId, event.id); // Update the last observed event ID
-            observer.next(event); // Emit each event to the client
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            observer.next({ data: event }); // Emit each event to the client
           });
         }
       }, intervalMs);

@@ -35,10 +35,9 @@ export class EventService {
     return this.eventRepository.findOne({ where: { id: id } });
   }
 
-  // If you need additional methods, you can add them as needed
   subscribeToEvent(channelId: number, eventIdentifier: string) {
     const intervalMs = 2000; // Change this to your desired interval
-    return new Observable<Event>((observer) => {
+    return new Observable<MessageEvent<Event>>((observer) => {
       const intervalId = setInterval(async () => {
         const lastEventId = this.lastEventIdMap.get(channelId) || 0;
         const events = await this.eventRepository.find({
@@ -52,7 +51,11 @@ export class EventService {
         if (events && events.length > 0) {
           events.forEach((event) => {
             this.lastEventIdMap.set(channelId, event.id); // Update the last observed event ID
-            observer.next(event); // Emit each event to the client
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            observer.next({
+              data: event,
+            }); // Emit each event to the client
           });
         }
       }, intervalMs);
