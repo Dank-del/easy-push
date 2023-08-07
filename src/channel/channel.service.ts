@@ -4,11 +4,14 @@ import { MoreThan, Repository } from 'typeorm';
 import { Channel } from './channel.entity';
 import { App } from '../apps/apps.entity';
 import { Event } from '../event/event.entity';
-import { Observable } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 import { EventService } from '../event/event.service';
 @Injectable()
 export class ChannelService {
   private lastEventIdMap: Map<number, number> = new Map();
+  private channels: Map<number, ReplaySubject<MessageEvent<Event>>> = new Map();
+  private subscriberCounts: Map<number, number> = new Map();
+
   constructor(
     @InjectRepository(Channel)
     private channelRepository: Repository<Channel>,
@@ -23,9 +26,13 @@ export class ChannelService {
   }
 
   subscribeToChannel(channelId: number): Observable<MessageEvent<Event>> {
-    // Simulate the event stream using an interval for demonstration purposes
-    const intervalMs = 2000; // Change this to your desired interval
-    return new Observable<MessageEvent<Event>>((observer) => {
+    // If a subject for this channel doesn't exist, create it
+    if (!this.channels.has(channelId)) {
+      this.channels.set(channelId, new ReplaySubject());
+      this.subscriberCounts.set(channelId, 0);
+
+      // Simulate the event stream using an interval for demonstration purposes
+      const intervalMs = 2000; // Change this to your desired interval
       const intervalId = setInterval(async () => {
         const lastEventId = this.lastEventIdMap.get(channelId) || 0;
         const events = await this.eventService.eventRepository.find({
@@ -35,19 +42,34 @@ export class ChannelService {
         if (events && events.length > 0) {
           events.forEach((event) => {
             this.lastEventIdMap.set(channelId, event.id); // Update the last observed event ID
+
+            // Emit each event to the client
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            observer.next({ data: event }); // Emit each event to the client
+            this.channels.get(channelId).next({ data: event });
           });
         }
       }, intervalMs);
 
-      // Return a teardown function to clean up the interval when the client unsubscribes
-      return () => {
-        clearInterval(intervalId);
-        this.lastEventIdMap.delete(channelId); // Remove the channel's last event ID when unsubscribed
-      };
-    });
+      // Return a teardown function to clean up the interval when all subscribers have unsubscribed
+      this.channels.get(channelId).subscribe({
+        complete: () => {
+          const count = this.subscriberCounts.get(channelId) - 1;
+          this.subscriberCounts.set(channelId, count);
+          if (count === 0) {
+            clearInterval(intervalId);
+            this.lastEventIdMap.delete(channelId); // Remove the channel's last event ID when unsubscribed
+            this.channels.delete(channelId); // Remove the channel when unsubscribed
+          }
+        },
+      });
+    }
+
+    this.subscriberCounts.set(
+      channelId,
+      this.subscriberCounts.get(channelId) + 1,
+    );
+    return this.channels.get(channelId).asObservable();
   }
 
   async findChannelById(id: number): Promise<Channel | undefined> {
