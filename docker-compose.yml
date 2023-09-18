@@ -9,8 +9,8 @@ services:
     container_name: postgres
     volumes:
       - ./pgdata:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
+    networks:
+      - easy-push-network
 
   app:
     build:
@@ -27,6 +27,8 @@ services:
       - db
     volumes:
       - ./src:/app/src
+    networks:
+      - easy-push-network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -39,3 +41,8 @@ services:
       - '5050:80'
     depends_on:
       - db
+    networks:
+      - easy-push-network
+
+networks:
+  easy-push-network:
