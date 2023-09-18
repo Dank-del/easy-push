@@ -19,8 +19,10 @@ services:
     container_name: easy-push-container
     environment:
       - PORT=${PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_LIFETIME=${JWT_LIFETIME}
     ports:
-      - '3000:3000'
+      - ${PORT}:${PORT}
     depends_on:
       - db
     volumes:
