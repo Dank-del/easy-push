@@ -15,9 +15,15 @@ import { AuthModule } from './auth/auth.module';
 import { EventEmitterSubscriber } from './event/event.subscriber';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { UtilsModule } from './utils/utils.module';
-
+import { ThrottlerModule } from '@nestjs/throttler';
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
