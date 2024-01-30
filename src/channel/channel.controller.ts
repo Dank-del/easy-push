@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Request,
   Sse,
 } from '@nestjs/common';
@@ -41,13 +42,18 @@ export class ChannelController {
     @Request() request: AuthorizedRequest,
     @Param('channelId') channelId: number,
     @Param('eventIdentifier') eventIdentifier: string,
+    @Query('limit') limit?: number,
   ) {
     const { channel } = await this.utilsService.isChannelOwned(
       channelId,
       request.user.id,
     );
 
-    return this.eventsService.subscribeToEvent(channel.id, eventIdentifier);
+    return this.eventsService.subscribeToEvent(
+      channel.id,
+      eventIdentifier,
+      limit || 10,
+    );
   }
 
   @Get(':id')

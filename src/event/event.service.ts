@@ -8,6 +8,14 @@ import { Observable, ReplaySubject } from 'rxjs';
 
 @Injectable()
 export class EventService {
+  async listEvents(channelId: number, page: number, limit: number) {
+    return await this.eventRepository.find({
+      where: { channel: { id: channelId } },
+      take: limit,
+      skip: page * limit,
+      order: { created_at: 'DESC' },
+    });
+  }
   private lastEventIdMap: Map<number, number> = new Map();
   private channels: Map<number, ReplaySubject<MessageEvent<Event>>> = new Map();
   private subscriberCounts: Map<number, number> = new Map();
@@ -40,6 +48,7 @@ export class EventService {
   subscribeToEvent(
     channelId: number,
     identifier: string,
+    limit = 10,
   ): Observable<MessageEvent<Event>> {
     // If a subject for this channel doesn't exist, create it
     if (!this.channels.has(channelId)) {
@@ -56,6 +65,8 @@ export class EventService {
             identifier: identifier,
             id: MoreThan(lastEventId),
           },
+          take: limit,
+          order: { created_at: 'DESC' },
         });
 
         if (events && events.length > 0) {

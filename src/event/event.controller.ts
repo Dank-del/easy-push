@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Request,
+} from '@nestjs/common';
 import { EventService } from './event.service';
 import { ChannelService } from '../channel/channel.service';
 import { AuthorizedRequest } from '../auth/auth.middleware';
@@ -26,6 +34,24 @@ export class EventController {
       eventData.identifier,
       eventData.payload,
       channel,
+    );
+  }
+
+  @Get('/:channelId/list')
+  async listEvents(
+    @Request() request: AuthorizedRequest,
+    @Param('channelId') channelId: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const { channel } = await this.utilsService.isChannelOwned(
+      channelId,
+      request.user.id,
+    );
+    return await this.eventsService.listEvents(
+      channel.id,
+      page || 1,
+      limit || 10,
     );
   }
 }
